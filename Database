@@ -1,0 +1,102 @@
+-- User table to store user profiles and their friends
+CREATE TABLE Users (
+    user_id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    weight_kg DECIMAL(5, 2),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table to store connections between users (friends)
+CREATE TABLE Friends (
+    friendship_id SERIAL PRIMARY KEY,
+    user_id_1 INT NOT NULL,
+    user_id_2 INT NOT NULL,
+    FOREIGN KEY (user_id_1) REFERENCES Users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id_2) REFERENCES Users(user_id) ON DELETE CASCADE,
+    CHECK (user_id_1 != user_id_2),
+    -- Ensure a friendship is stored only once regardless of the order of user_ids
+    UNIQUE (user_id_1, user_id_2)
+);
+
+-- Workout table to log user workouts
+CREATE TABLE Workouts (
+    workout_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    workout_date DATE NOT NULL,
+    duration_minutes INT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
+);
+
+-- Exercise table to store details of exercises within a workout
+CREATE TABLE Exercises (
+    exercise_id SERIAL PRIMARY KEY,
+    workout_id INT NOT NULL,
+    exercise_name VARCHAR(255) NOT NULL,
+    sets INT,
+    reps INT,
+    weight_kg DECIMAL(5, 2),
+    FOREIGN KEY (workout_id) REFERENCES Workouts(workout_id) ON DELETE CASCADE
+);
+
+-- Goals table to store personal fitness goals
+CREATE TABLE Goals (
+    goal_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    goal_description TEXT NOT NULL,
+    target_value INT,
+    start_date DATE NOT NULL,
+    end_date DATE,
+    is_completed BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
+);
+
+-- To enforce that a friendship is only stored in one direction (e.g., A-B, not B-A), 
+-- you can use a check constraint or a trigger.
+-- The unique constraint on (user_id_1, user_id_2) combined with the way you insert data
+-- (e.g., always `user_id_1 < user_id_2`) can handle this.
+
+INSERT INTO Users (name, email, weight_kg) VALUES
+('Alice Johnson', 'alice.j@email.com', 65.5),
+('Bob Smith', 'bob.s@email.com', 80.2),
+('Charlie Brown', 'charlie.b@email.com', 72.0);
+
+-- --- Sample Data for Friends Table ---
+-- Establishes friendships between the users created above.
+-- Note: User IDs are assigned sequentially (1, 2, 3...) so we can reference them.
+-- The UNIQUE constraint on (user_id_1, user_id_2) prevents duplicate entries.
+
+INSERT INTO Friends (user_id_1, user_id_2) VALUES
+(1, 2),  -- Alice is friends with Bob
+(1, 3);  -- Alice is friends with Charlie
+
+-- --- Sample Data for Workouts Table ---
+-- Logs a few workouts for Alice and Bob.
+-- workout_id will be assigned automatically.
+
+INSERT INTO Workouts (user_id, workout_date, duration_minutes) VALUES
+(1, '2023-10-25', 45), -- Alice's workout 1
+(1, '2023-10-26', 60), -- Alice's workout 2
+(2, '2023-10-26', 30); -- Bob's workout 1
+
+-- --- Sample Data for Exercises Table ---
+-- Adds exercises to the workouts logged above.
+-- exercise_id is assigned automatically.
+
+INSERT INTO Exercises (workout_id, exercise_name, sets, reps, weight_kg) VALUES
+(1, 'Push-ups', 3, 15, NULL),
+(1, 'Sit-ups', 3, 20, NULL),
+(2, 'Squats', 4, 10, 50.0),
+(2, 'Deadlifts', 3, 5, 75.0),
+(3, 'Running', 1, 1, NULL),
+(3, 'Cycling', 1, 1, NULL);
+
+-- --- Sample Data for Goals Table ---
+-- Sets some personal goals for Alice and Bob.
+
+INSERT INTO Goals (user_id, goal_description, target_value, start_date, end_date, is_completed) VALUES
+(1, 'Run 15 km in one week', 15, '2023-10-23', '2023-10-30', FALSE),
+(1, 'Workout 5 times in a week', 5, '2023-10-23', '2023-10-30', TRUE),
+(2, 'Lose 5 kg', 5, '2023-10-01', '2023-12-31', FALSE);
+Select * from Users;
